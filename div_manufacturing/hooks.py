@@ -1,3 +1,6 @@
+# Copyright (c) 2026, Duncan Integrated Ventures LLC. and contributors
+# For license information, please see license.txt
+
 app_name = "div_manufacturing"
 app_title = "DIV Manufacturing"
 app_publisher = "Duncan Integrated Ventures LLC."
@@ -43,6 +46,9 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
+doctype_js = {
+	"Stock Entry": "public/js/custom/manufacture_transit_mapping.js",
+}
 # doctype_js = {"doctype" : "public/js/doctype.js"}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
@@ -249,4 +255,3 @@ app_license = "mit"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-
