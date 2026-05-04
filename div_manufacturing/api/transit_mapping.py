@@ -12,7 +12,7 @@ import frappe
 from frappe.utils import flt
 
 
-def _inv_dim_fieldnames() -> list[str]:
+def inv_dim_fieldnames() -> list[str]:
 	"""Source-side fieldnames (e.g. `feeder`, `customer`, `handling_unit`) for every
 	Inventory Dimension. The paired target field on Stock Entry Detail is
 	`to_{fieldname}` (beam's convention): the source row's `to_*` holds where the
@@ -27,10 +27,10 @@ def _inv_dim_fieldnames() -> list[str]:
 	]
 
 
-def _source_rows(source_stock_entry: str) -> list[dict]:
+def source_rows(source_stock_entry: str) -> list[dict]:
 	"""Rows from the source Material Transfer for Manufacture, ordered by idx.
 	Each row's `to_*` values are what the WIP stock is currently tagged with."""
-	dims = _inv_dim_fieldnames()
+	dims = inv_dim_fieldnames()
 	fields = [
 		"name",
 		"idx",
@@ -62,10 +62,10 @@ def get_allocation_preview(target_stock_entry: str, source_stock_entry: str) -> 
 	missing handling_unit) from available source qty until the row is covered.
 	Does not mutate either document."""
 	target = frappe.get_doc("Stock Entry", target_stock_entry)
-	dims = _inv_dim_fieldnames()
+	dims = inv_dim_fieldnames()
 	sources: list[dict] = []
-	for src_name in _as_list(source_stock_entry):
-		sources.extend(_source_rows(src_name))
+	for src_name in as_list(source_stock_entry):
+		sources.extend(source_rows(src_name))
 
 	# Group sources by item_code; track remaining qty per source row. Skip rows
 	# that carry no inventory dimensions at all — there's nothing to copy onto
@@ -140,7 +140,7 @@ def get_allocation_preview(target_stock_entry: str, source_stock_entry: str) -> 
 	}
 
 
-def _as_list(v) -> list[str]:
+def as_list(v) -> list[str]:
 	if isinstance(v, str):
 		try:
 			parsed = frappe.parse_json(v)
@@ -202,25 +202,25 @@ def apply_allocation(target_stock_entry: str, allocations: list | str) -> dict:
 		# Remaining allocations become new rows cloned from target_row (cheap to
 		# copy via as_dict before we mutate the original).
 		template = target_row.as_dict()
-		_apply_alloc_to_row(target_row, allocs[0])
+		apply_alloc_to_row(target_row, allocs[0])
 		if leftover > 0:
 			# Remainder: keep an un-tagged row carrying the leftover qty.
-			leftover_row = _clone_row(se, template)
+			leftover_row = clone_row(se, template)
 			leftover_row.qty = leftover
 			leftover_row.transfer_qty = leftover * flt(leftover_row.conversion_factor or 1)
 			leftover_row.handling_unit = None
-			for f in _inv_dim_fieldnames():
+			for f in inv_dim_fieldnames():
 				leftover_row.set(f, None)
 
 		for a in allocs[1:]:
-			new_row = _clone_row(se, template)
-			_apply_alloc_to_row(new_row, a)
+			new_row = clone_row(se, template)
+			apply_alloc_to_row(new_row, a)
 
 	se.save()
 	return {"ok": True, "name": se.name}
 
 
-def _apply_alloc_to_row(row, alloc: dict) -> None:
+def apply_alloc_to_row(row, alloc: dict) -> None:
 	qty = flt(alloc["qty"])
 	row.qty = qty
 	row.transfer_qty = qty * flt(row.conversion_factor or 1)
@@ -230,7 +230,7 @@ def _apply_alloc_to_row(row, alloc: dict) -> None:
 		row.set(field, value)
 
 
-def _clone_row(se, template: dict):
+def clone_row(se, template: dict):
 	# Drop fields that must be regenerated for a new row; keep item_code,
 	# warehouses, uom, conversion_factor, basic_rate, etc.
 	for k in (
